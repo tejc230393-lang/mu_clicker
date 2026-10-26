@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>無クリッカー</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;900&display=swap">
+<style>
+:root{
+  --bg:#eceef0; --ink:#1b1d1f; --mute:#7b8187; --line:#c9cdd1; --panel:#e2e5e8;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:#141516;--ink:#e6e8ea;--mute:#7d848a;--line:#2d3033;--panel:#1c1e20;color-scheme:dark}
+}
+:root[data-theme="dark"]{--bg:#141516;--ink:#e6e8ea;--mute:#7d848a;--line:#2d3033;--panel:#1c1e20;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);font-family:"Zen Old Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+  display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+main{width:100%;max-width:520px;padding:20px 20px 80px;display:flex;flex-direction:column;align-items:center}
+.count{font-size:15px;color:var(--mute);margin:8px 0 0;letter-spacing:.1em}
+.num{font-size:clamp(40px,12vw,64px);font-weight:900;margin:2px 0 0;font-variant-numeric:tabular-nums}
+.per{font-size:13px;color:var(--mute);margin:4px 0 16px;min-height:1.2em}
+#mu{
+  width:min(62vw,260px);aspect-ratio:1;border-radius:50%;border:1px solid var(--line);background:transparent;
+  color:var(--ink);font:inherit;font-size:clamp(100px,30vw,150px);font-weight:900;cursor:pointer;
+  user-select:none;-webkit-tap-highlight-color:transparent;transition:transform .08s,background .2s;
+}
+#mu:hover{background:var(--panel)}
+#mu:active{transform:scale(.96)}
+#mu:focus-visible,.up:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.msg{min-height:1.6em;margin:14px 0 6px;font-size:14px;color:var(--mute);text-align:center}
+.float{position:fixed;pointer-events:none;font-weight:900;font-size:18px;animation:up .8s ease-out forwards}
+@keyframes up{to{transform:translateY(-60px);opacity:0}}
+@media (prefers-reduced-motion:reduce){.float{animation:none;opacity:0}}
+h2{font-size:15px;font-weight:900;margin:22px 0 8px;align-self:flex-start}
+.list{width:100%;display:flex;flex-direction:column;gap:8px}
+.up{width:100%;text-align:left;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);
+  border-radius:6px;padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.up small{display:block;color:var(--mute);font-size:12px;margin-top:2px}
+.up .cost{font-weight:900;white-space:nowrap;font-variant-numeric:tabular-nums}
+.up:disabled{opacity:.4;cursor:not-allowed}
+.up.owned{opacity:.55;cursor:default}
+.ach{width:100%;font-size:14px;color:var(--mute);border-top:1px solid var(--line);padding-top:10px;margin-top:6px}
+.ach b{color:var(--ink)}
+.reset{margin-top:28px;background:none;border:none;color:var(--mute);font:inherit;font-size:12px;cursor:pointer;text-decoration:underline}
+#void{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:var(--bg);transition:opacity .5s;outline:none}
+#voidmsg{font-size:16px;color:var(--mute);letter-spacing:.1em}
+body.blank main{display:none}
+body.blank #news{display:none}
+#news{position:fixed;left:0;right:0;bottom:0;z-index:3;background:var(--panel);border-top:1px solid var(--line);color:var(--mute);font-size:13px;white-space:nowrap;overflow:hidden;padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px))}
+#newstxt{display:inline-block;padding-left:100%;animation:flow 16s linear infinite}
+@keyframes flow{to{transform:translateX(-100%)}}
+.gold{position:fixed;z-index:4;width:64px;height:64px;border-radius:50%;border:1px dashed var(--ink);background:transparent;color:var(--ink);font:inherit;font-size:34px;font-weight:900;opacity:.3;cursor:pointer;transition:opacity .4s;animation:pulse 2.4s ease-in-out infinite}
+.gold:hover{opacity:.7}
+#pop{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);z-index:6;text-align:center;pointer-events:none;opacity:0;transition:opacity .35s;padding:20px 28px;background:var(--bg);border:1px solid var(--line);border-radius:8px;max-width:86vw}
+#pop.show{opacity:1}
+#popn{font-size:clamp(24px,7vw,38px);font-weight:900}
+#popm{font-size:13px;color:var(--mute);margin-top:6px}
+@keyframes pulse{50%{transform:scale(1.12)}}
+@media (prefers-reduced-motion:reduce){.gold{animation:none}#newstxt{animation:none;padding-left:0;display:block;white-space:normal;text-align:center}}
+.seeds{display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-bottom:8px}
+.seed{font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+.seed.sel{border-color:var(--ink);font-weight:900}
+.plots{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%}
+.plot{aspect-ratio:1;font:inherit;font-size:26px;font-weight:900;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;line-height:1.1}
+.plot small{font-size:11px;font-weight:400;color:var(--mute)}
+.plot.empty{color:var(--mute);font-weight:400}
+.plot.grow{opacity:.55}
+.plot.ripe{border:2px solid var(--ink)}
+.seed:focus-visible,.plot:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.hint{font-size:12px;color:var(--mute);margin:8px 0 0}
+</style>
+</head>
+<body class="blank">
+<div id="void" tabindex="0" role="button" aria-label="何もない画面"><span id="voidmsg"></span></div>
+<main>
+  <p class="count">現在の無</p>
+  <p class="num" id="num">0</p>
+  <p class="per" id="per">1クリックで 無 1</p>
+  <button id="mu" aria-label="無をクリック">無</button>
+  <p class="msg" id="msg">何も起きない。</p>
+
+  <h2>強化</h2>
+  <div class="list" id="list"></div>
+
+  <h2>自動化(毎秒の無)</h2>
+  <div class="list" id="glist"></div>
+
+  <div id="farm" style="display:none;width:100%">
+    <h2>無の畑</h2>
+    <div class="seeds" id="seeds"></div>
+    <div class="plots" id="plots"></div>
+    <p class="hint">種を選んで、空いた区画をクリックして植える。育ったらクリックで収穫。</p>
+  </div>
+
+  <h2>実績</h2>
+  <div class="ach" id="ach">まだ何も解除されていない。(いつものこと)</div>
+
+  <button class="reset" id="reset">最初からやり直す</button>
+</main>
+<div id="news"><span id="newstxt"></span></div>
+<div id="pop" aria-live="polite"><div id="popn"></div><div id="popm"></div></div>
+<script>
+const UPS=[
+  {n:"深呼吸",d:"無を吸って、無を吐く",c:10},
+  {n:"座禅",d:"足がしびれる",c:100},
+  {n:"悟りの入口",d:"入口にいる",c:1000},
+  {n:"空(くう)",d:"空っぽ",c:10000},
+  {n:"虚無の深淵",d:"覗き返してくる",c:100000},
+  {n:"宇宙の果ての無",d:"ビッグバン前",c:1000000},
+  {n:"無の無",d:"無を無にする",c:10000000},
+  {n:"無を超えた無",d:"もう何も言うことはない",c:100000000}
+];
+const MSG=["何も起きない。","無が増えただけ。","強くなった気がする。","気のせいだ。","特に変化はない。","数字が大きくなった。それだけ。","無。"];
+const K="mu-clicker-v1";
+let st={mu:0,owned:0,total:0,clicks:0,ach:[],gens:[],farm:[],harvests:0};
+try{const s=localStorage.getItem(K);if(s){const o=JSON.parse(s);if(o&&typeof o.mu==="number")st=Object.assign(st,o)}}catch(e){}
+const $=id=>document.getElementById(id);
+const power=()=>Math.pow(2,st.owned);
+const GENS=[
+  {n:"無の見習い",d:"ただ立っている",c:30,p:0.2},
+  {n:"無の住人",d:"何もせず暮らしている",c:300,p:2},
+  {n:"無の工場",d:"何も作らない",c:3000,p:20},
+  {n:"無の寺院",d:"本尊がない",c:30000,p:200},
+  {n:"無の惑星",d:"何も住んでいない",c:300000,p:2000},
+  {n:"無の銀河",d:"星すらない",c:3000000,p:20000},
+  {n:"無の宇宙",d:"最初からここにあった",c:30000000,p:200000}
+];
+const cnt=i=>st.gens[i]||0;
+const genCost=i=>Math.ceil(GENS[i].c*Math.pow(1.15,cnt(i)));
+const mps=()=>GENS.reduce((s,u,i)=>s+u.p*cnt(i),0);
+const fmtD=n=>n<10000?(Math.round(n*10)/10).toLocaleString("ja-JP"):fmt(n);
+function fmt(n){
+  if(n<10000)return Math.floor(n).toLocaleString("ja-JP");
+  const u=[["無量大数",1e68],["不可思議",1e64],["那由他",1e60],["恒河沙",1e56],["京",1e16],["兆",1e12],["億",1e8],["万",1e4]];
+  for(const[x,v]of u){if(n>=v){const q=n/v;return (q>=100?Math.floor(q):q.toFixed(1).replace(/\.0$/,""))+x}}
+  return Math.floor(n)+"";
+}
+function save(){try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}}
+function achv(){
+  const a=[];
+  const gt=(st.gens||[]).reduce((s,x)=>s+(x||0),0),fl=(st.farm||[]).filter(x=>x).length;
+  if(st.clicks>=10)a.push(["指ならし","10回クリックした。特典なし。"]);
+  if(st.clicks>=100)a.push(["無の指","100回クリックした。特典なし。"]);
+  if(st.clicks>=1000)a.push(["腱鞘炎の予感","1000回クリックした。特典なし。"]);
+  if(st.clicks>=10000)a.push(["指が無になった","1万回クリックした。特典なし。"]);
+  if(st.total>=1000)a.push(["無貯金","累計1000の無。特典なし。"]);
+  if(st.total>=1e6)a.push(["無長者","累計100万の無。特典なし。"]);
+  if(st.total>=1e8)a.push(["無億万長者","累計1億の無。特典なし。"]);
+  if(st.total>=1e12)a.push(["無の王","累計1兆の無。特典なし。"]);
+  if(st.owned>=1)a.push(["初めての強化","強化を1つ買った。特典なし。(実際は倍になっている)"]);
+  if(st.owned>=4)a.push(["半分悟った","強化を4つ買った。特典なし。"]);
+  if(gt>=10)a.push(["無の従業員","自動化を計10個持った。特典なし。"]);
+  if(gt>=50)a.push(["無の企業","自動化を計50個持った。特典なし。"]);
+  if(GENS.every((u,i)=>cnt(i)>0))a.push(["無の全種コンプ","すべての自動化を持った。特典なし。"]);
+  if(mps()>=100)a.push(["無の流れ","毎秒100の無。特典なし。"]);
+  if(mps()>=100000)a.push(["無の滝","毎秒10万の無。特典なし。"]);
+  if(st.golds>=1)a.push(["透明な無","黄金の無をクリックした。特典なし。"]);
+  if(st.golds>=10)a.push(["見えている人","黄金の無を10回クリックした。特典なし。"]);
+  if(st.harvests>=1)a.push(["無を収穫","初めて収穫した。特典なし。"]);
+  if(st.harvests>=50)a.push(["無の大地主","50回収穫した。特典なし。"]);
+  if(fl>=12)a.push(["満員の畑","全区画に植えた。特典なし。"]);
+  if(st.clicks>=1)a.push(["初めての無","1回クリックした。特典なし。"]);
+  if(st.total>=10000)a.push(["無持ち","無を1万個ためた。特典なし。"]);
+  if(st.harvests>=10)a.push(["無農家","無を10回収穫した。何も育てていない。"]);
+  if(mps()>0)a.push(["無の自動化","放っておいても無が増える。特典なし。"]);
+  if(mps()>=1000)a.push(["無の大量生産","毎秒1000の無。何も作っていない。"]);
+  if(st.owned>=UPS.length)a.push(["無を極めし者","全強化を購入した。特典なし。"]);
+  st.ach=a.map(x=>x[0]);
+  $("ach").innerHTML=a.length?a.map(x=>`<div><b>${x[0]}</b>　${x[1]}</div>`).join(""):"まだ何も解除されていない。(いつものこと)";
+}
+function render(){
+  $("num").textContent=fmt(st.mu);
+  $("per").textContent="1クリックで 無 "+fmt(power())+"　毎秒 無 "+fmtD(mps())+(mult()>1?"　×7 残り"+Math.ceil((frenzyUntil-Date.now())/1000)+"秒":"");
+  const g=$("glist");
+  if(!g.children.length){
+    GENS.forEach((u,i)=>{
+      const b=document.createElement("button");b.className="up";
+      b.innerHTML=`<span><span class="t"></span><small></small></span><span class="cost"></span>`;
+      b.addEventListener("click",()=>buyGen(i));
+      g.appendChild(b);
+    });
+  }
+  let hi=-1;GENS.forEach((u,i)=>{if(cnt(i)>0)hi=i});
+  GENS.forEach((u,i)=>{
+    const b=g.children[i],c=genCost(i);
+    b.querySelector(".t").textContent=u.n+"  所持 "+cnt(i);
+    b.querySelector("small").textContent=u.d+"(毎秒 無 "+fmtD(u.p)+")";
+    b.querySelector(".cost").textContent=fmt(c);
+    b.disabled=st.mu<c;
+    b.style.display=i<=hi+1?"flex":"none";
+  });
+  const list=$("list");
+  if(!list.children.length){
+    UPS.forEach((u,i)=>{
+      const b=document.createElement("button");b.className="up";b.dataset.i=i;
+      b.innerHTML=`<span><span class="t"></span><small></small></span><span class="cost"></span>`;
+      b.addEventListener("click",()=>buy(i));
+      list.appendChild(b);
+    });
+  }
+  UPS.forEach((u,i)=>{
+    const b=list.children[i],owned=i<st.owned,next=i===st.owned;
+    b.querySelector(".t").textContent=u.n+(owned?"(購入済み)":"")+"  ×2";
+    b.querySelector("small").textContent=u.d;
+    b.querySelector(".cost").textContent=owned?"済":fmt(u.c);
+    b.disabled=!next||st.mu<u.c;
+    b.classList.toggle("owned",owned);
+    b.style.display=i<=st.owned+1?"flex":"none";
+  });
+  achv();
+  renderFarm();
+}
+function buy(i){
+  const u=UPS[i];
+  if(i!==st.owned||st.mu<u.c)return;
+  st.mu-=u.c;st.owned++;
+  $("msg").textContent=`「${u.n}」を習得した。……何も変わらない。`;showPop(u.n,UPMSG[i]);
+  render();save();
+}
+const SEEDS=[
+  {k:"芽",n:"無の芽",c:50,t:15,y:120},
+  {k:"花",n:"虚無の花",c:500,t:40,y:1400},
+  {k:"実",n:"空の実",c:5000,t:90,y:16000},
+  {k:"樹",n:"無の大樹",c:50000,t:180,y:200000}
+];
+const PLOTS=12;
+let seed=0;
+const farmYield=s=>s.y+mps()*s.t*0.6;
+function setV(b,cls,html){
+  const v=cls+"|"+html;
+  if(b.dataset.v!==v){b.dataset.v=v;b.className=cls;b.innerHTML=html}
+}
+function renderFarm(){
+  const open=st.total>=200||st.farm.some(x=>x);
+  $("farm").style.display=open?"block":"none";
+  if(!open)return;
+  const sl=$("seeds"),pl=$("plots");
+  if(!sl.children.length){
+    SEEDS.forEach((s,i)=>{const b=document.createElement("button");b.addEventListener("click",()=>{seed=i;renderFarm()});sl.appendChild(b)});
+    for(let i=0;i<PLOTS;i++){const b=document.createElement("button");b.addEventListener("click",()=>plot(i));pl.appendChild(b)}
+  }
+  SEEDS.forEach((s,i)=>{const b=sl.children[i];setV(b,"seed"+(i===seed?" sel":""),s.k+" "+s.n+" "+fmt(s.c))});
+  const now=Date.now();
+  for(let i=0;i<PLOTS;i++){
+    const b=pl.children[i],p=st.farm[i];
+    if(!p){setV(b,"plot empty","＋");continue}
+    const s=SEEDS[p.k],el=(now-p.t)/1000;
+    if(el>=s.t)setV(b,"plot ripe",s.k+"<small>収穫"+"</small>");
+    else setV(b,"plot grow",s.k+"<small>"+Math.ceil(s.t-el)+"秒</small>");
+  }
+}
+function plot(i){
+  const p=st.farm[i];
+  if(!p){
+    const s=SEEDS[seed];
+    if(st.mu<s.c){$("msg").textContent="種を買う無が足りない。";return}
+    st.mu-=s.c;st.farm[i]={k:seed,t:Date.now()};
+    $("msg").textContent=`「${s.n}」を植えた。無を土に埋めただけ。`;
+  }else{
+    const s=SEEDS[p.k];
+    if((Date.now()-p.t)/1000<s.t){$("msg").textContent="まだ育っている。無は急がない。";return}
+    let y=farmYield(s);
+    if(Math.random()<0.05){y*=5;$("msg").textContent=`突然変異! 無が5倍実った。無+${fmt(y)}`}
+    else $("msg").textContent=`「${s.n}」を収穫した。無+${fmt(y)}`;
+    st.mu+=y;st.total+=y;st.farm[i]=null;st.harvests=(st.harvests||0)+1;
+  }
+  render();save();
+}
+function buyGen(i){
+  const c=genCost(i);
+  if(st.mu<c)return;
+  const first=cnt(i)===0;st.mu-=c;st.gens[i]=cnt(i)+1;if(first)showPop(GENS[i].n,GENMSG[i]);
+  $("msg").textContent=`「${GENS[i].n}」が加わった。無が勝手に増える。……だから何だ。`;
+  render();save();
+}
+let frenzyUntil=0;
+const mult=()=>Date.now()<frenzyUntil?7:1;
+function spawnGold(){
+  if(document.body.classList.contains("blank"))return;
+  const b=document.createElement("button");b.className="gold";b.textContent="無";b.setAttribute("aria-label","透明な無");
+  b.style.left=(8+Math.random()*76)+"%";b.style.top=(12+Math.random()*60)+"%";
+  let gone=false;
+  const rm=()=>{if(gone)return;gone=true;b.style.opacity="0";setTimeout(()=>b.remove(),400)};
+  b.addEventListener("click",()=>{
+    if(gone)return;rm();
+    st.golds=(st.golds||0)+1;
+    const r=Math.random(),m=$("msg");
+    if(r<0.5)m.textContent="何も起きなかった。";
+    else if(r<0.92){const g=Math.max(mps()*60,power()*100);st.mu+=g;st.total+=g;m.textContent=`透明な無が実体化した。無+${fmt(g)}`}
+    else{frenzyUntil=Date.now()+30000;m.textContent="無の大放出! 30秒間、すべての無が7倍。"}
+    render();save();
+  });
+  document.body.appendChild(b);
+  setTimeout(rm,9000);
+}
+function scheduleGold(first){setTimeout(()=>{spawnGold();scheduleGold(false)},first?20000+Math.random()*20000:40000+Math.random()*60000)}
+scheduleGold(true);
+
+let newsCur="";
+function newsPool(){
+  const p=["本日の無、昨日と変わらず。","専門家「特に何も起きていない」","無の価格、横ばいが続く。","速報:速報はありません。","無に関する新たな発見はなかった。","天気:無。","市民「無でいいです」","「無の日」、今年も何も開催されず。"];
+  if(st.clicks>=100)p.push("指の使いすぎに注意を呼びかけ。原因は無。");
+  if(mps()>0)p.push("無の自動化が進むも、雇用は創出されず。");
+  if(st.owned>=4)p.push("悟りを開いたとの情報、確認はとれず。");
+  if(st.harvests>=1)p.push("無の畑、豊作。収穫物は無。");
+  if(st.total>=1e6)p.push("無長者番付、首位は無。");
+  if(mps()>=1000)p.push("無の大量生産、環境への影響は無。");
+  if(st.total>=1e8)p.push("無の市場、過熱の兆し。実体は無。");
+  if(cnt(6)>0)p.push("宇宙の起源は無だった可能性、専門家が示唆。");
+  if(st.golds>0)p.push("透明な無の目撃情報が相次ぐ。");
+  return p;
+}
+function nextNews(){
+  const p=newsPool().filter(x=>x!==newsCur);
+  newsCur=p[Math.floor(Math.random()*p.length)];
+  $("newstxt").textContent=newsCur;
+}
+$("newstxt").addEventListener("animationiteration",nextNews);
+if(matchMedia("(prefers-reduced-motion: reduce)").matches)setInterval(nextNews,9000);
+nextNews();
+
+const UPMSG=["吸った。無を。","足がしびれた。それだけ。","入口の看板に「無」と書いてある。","空っぽが、さらに空っぽになった。","深淵がこちらを見ている。無表情で。","果てには何もなかった。予定どおり。","無が、無くなった。……無くなっていない。","もう何も言うことはない。"];
+const GENMSG=["採用した。何をするかは未定。","住民票は無。","生産ラインは動いている。製品はない。","お賽銭は無。","地表は一面、無。","星すらない銀河が見つかった。","最初からここにあった。"];
+let popT=null;
+function showPop(n,m){
+  const p=$("pop");$("popn").textContent=n;$("popm").textContent=m;
+  p.classList.remove("show");void p.offsetWidth;p.classList.add("show");
+  clearTimeout(popT);popT=setTimeout(()=>p.classList.remove("show"),2200);
+}
+let tk=0;
+setInterval(()=>{
+  if(document.body.classList.contains("blank"))return;
+  const m=mps();
+  if(m>0){const d=m*mult()/10;st.mu+=d;st.total+=d}
+  render();
+  if(++tk%50===0)save();
+},100);
+$("mu").addEventListener("click",e=>{
+  const p=power()*mult();
+  st.mu+=p;st.total+=p;st.clicks++;
+  if(st.clicks%7===0)$("msg").textContent=MSG[Math.floor(Math.random()*MSG.length)];
+  const f=document.createElement("div");f.className="float";f.textContent="+"+fmt(p);
+  const x=e.clientX||innerWidth/2,y=e.clientY||innerHeight/2;
+  f.style.left=(x-12)+"px";f.style.top=(y-20)+"px";
+  document.body.appendChild(f);setTimeout(()=>f.remove(),800);
+  render();
+  if(st.clicks%10===0)save();
+});
+$("reset").addEventListener("click",()=>{
+  if(!confirm("無をすべて手放しますか?"))return;
+  st={mu:0,owned:0,total:0,clicks:0,ach:[],gens:[],farm:[],harvests:0};
+  toBlank();render();save();
+});
+addEventListener("beforeunload",save);
+let started=false;
+const V=$("void");
+function enter(){document.body.classList.remove("blank");V.style.display="none"}
+function toBlank(){document.body.classList.add("blank");V.style.display="flex";V.style.opacity="1";$("voidmsg").textContent="";started=false;$("msg").textContent="何も起きない。"}
+function begin(){
+  if(started)return;started=true;
+  $("voidmsg").textContent="(無を取得しました)";
+  st.mu=1;st.total=1;st.clicks=1;save();
+  setTimeout(()=>{V.style.opacity="0";setTimeout(()=>{enter();render()},500)},1400);
+}
+V.addEventListener("click",begin);
+V.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();begin()}});
+if(st.clicks>0)enter();
+render();
+</script>
+</body>
+</html>
